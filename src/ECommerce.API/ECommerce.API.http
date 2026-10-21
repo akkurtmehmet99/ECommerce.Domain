@@ -1,0 +1,186 @@
+@baseUrl = http://localhost:5052
+@zugriffstoken = HIER_JWT_EINTRAGEN
+@aktualisierungstoken = HIER_REFRESH_TOKEN_EINTRAGEN
+@kategorieId = 11111111-1111-1111-1111-111111111111
+@produktId = 22222222-2222-2222-2222-222222222222
+@warenkorbPositionId = 33333333-3333-3333-3333-333333333333
+@bestellungId = 44444444-4444-4444-4444-444444444444
+
+### Datenbankbereitschaft
+GET {{baseUrl}}/gesundheit
+
+### Aktive Kategorien
+GET {{baseUrl}}/api/kategorien
+
+### Aktive Produkte, Seite 1
+GET {{baseUrl}}/api/produkte?seite=1&seitengroesse=20
+
+### Produktdetails
+GET {{baseUrl}}/api/produkte/{{produktId}}
+
+### Kundenkonto registrieren
+POST {{baseUrl}}/api/authentifizierung/registrieren
+Content-Type: application/json
+
+{
+  "vorname": "Anna",
+  "nachname": "Beispiel",
+  "email": "anna@example.de",
+  "passwort": "Kunden-Passwort-2026!"
+}
+
+### Kundenanmeldung
+POST {{baseUrl}}/api/authentifizierung/anmelden
+Content-Type: application/json
+
+{
+  "email": "anna@example.de",
+  "passwort": "Kunden-Passwort-2026!"
+}
+
+### Zugriffstoken erneuern (altes Aktualisierungstoken wird widerrufen)
+POST {{baseUrl}}/api/authentifizierung/token-erneuern
+Content-Type: application/json
+
+{
+  "aktualisierungstoken": "{{aktualisierungstoken}}"
+}
+
+### Eigenes Kundenprofil
+GET {{baseUrl}}/api/authentifizierung/profil
+Authorization: Bearer {{zugriffstoken}}
+
+### Abmelden und Aktualisierungstoken widerrufen
+POST {{baseUrl}}/api/authentifizierung/abmelden
+Content-Type: application/json
+
+{
+  "aktualisierungstoken": "{{aktualisierungstoken}}"
+}
+
+### Kategorie anlegen (Administrator)
+POST {{baseUrl}}/api/kategorien
+Authorization: Bearer {{zugriffstoken}}
+Content-Type: application/json
+
+{
+  "name": "Elektronik",
+  "beschreibung": "Elektronische Geräte und Zubehör"
+}
+
+### Kategorie ändern (Administrator)
+PUT {{baseUrl}}/api/kategorien/{{kategorieId}}
+Authorization: Bearer {{zugriffstoken}}
+Content-Type: application/json
+
+{
+  "name": "Haushaltselektronik",
+  "beschreibung": "Geräte für den Haushalt"
+}
+
+### Kategorie deaktivieren (Administrator, nur ohne Produkte)
+DELETE {{baseUrl}}/api/kategorien/{{kategorieId}}
+Authorization: Bearer {{zugriffstoken}}
+
+### Produkt anlegen (Administrator)
+POST {{baseUrl}}/api/produkte
+Authorization: Bearer {{zugriffstoken}}
+Content-Type: application/json
+
+{
+  "name": "Kaffeemaschine",
+  "beschreibung": "Filterkaffeemaschine mit Timer",
+  "preis": 79.99,
+  "lagerbestand": 25,
+  "kategorieId": "{{kategorieId}}"
+}
+
+### Produkt ändern (Administrator)
+PUT {{baseUrl}}/api/produkte/{{produktId}}
+Authorization: Bearer {{zugriffstoken}}
+Content-Type: application/json
+
+{
+  "name": "Kaffeemaschine Pro",
+  "beschreibung": "Filterkaffeemaschine mit Timer",
+  "preis": 89.99,
+  "lagerbestand": 25,
+  "kategorieId": "{{kategorieId}}"
+}
+
+### Produkt deaktivieren (Administrator)
+DELETE {{baseUrl}}/api/produkte/{{produktId}}
+Authorization: Bearer {{zugriffstoken}}
+
+### Eigenen Warenkorb anzeigen
+GET {{baseUrl}}/api/warenkorb
+Authorization: Bearer {{zugriffstoken}}
+
+### Produkt in den Warenkorb legen
+POST {{baseUrl}}/api/warenkorb/positionen/{{produktId}}
+Authorization: Bearer {{zugriffstoken}}
+Content-Type: application/json
+
+{
+  "menge": 2
+}
+
+### Warenkorbmenge ändern
+PUT {{baseUrl}}/api/warenkorb/positionen/{{warenkorbPositionId}}
+Authorization: Bearer {{zugriffstoken}}
+Content-Type: application/json
+
+{
+  "menge": 1
+}
+
+### Warenkorbposition entfernen
+DELETE {{baseUrl}}/api/warenkorb/positionen/{{warenkorbPositionId}}
+Authorization: Bearer {{zugriffstoken}}
+
+### Bestellung aus dem Warenkorb erstellen
+POST {{baseUrl}}/api/bestellungen
+Authorization: Bearer {{zugriffstoken}}
+Content-Type: application/json
+
+{
+  "liefername": "Anna Beispiel",
+  "lieferstrasse": "Musterstraße 1",
+  "lieferpostleitzahl": "10115",
+  "lieferstadt": "Berlin",
+  "lieferland": "DE"
+}
+
+### Eigene Bestellungen
+GET {{baseUrl}}/api/bestellungen?seite=1&seitengroesse=20
+Authorization: Bearer {{zugriffstoken}}
+
+### Alle Bestellungen verwalten (Administrator)
+GET {{baseUrl}}/api/bestellungen/verwaltung?seite=1&seitengroesse=20
+Authorization: Bearer {{zugriffstoken}}
+
+### Eigene Bestellung anzeigen
+GET {{baseUrl}}/api/bestellungen/{{bestellungId}}
+Authorization: Bearer {{zugriffstoken}}
+
+### Sandbox-Zahlung erfolgreich simulieren (keine echten Zahlungsdaten)
+POST {{baseUrl}}/api/zahlungen/{{bestellungId}}/sandbox
+Authorization: Bearer {{zugriffstoken}}
+Content-Type: application/json
+
+{
+  "erfolgreich": true
+}
+
+### Sandbox-Zahlung fehlschlagen lassen und Bestand freigeben
+POST {{baseUrl}}/api/zahlungen/{{bestellungId}}/sandbox
+Authorization: Bearer {{zugriffstoken}}
+Content-Type: application/json
+
+{
+  "erfolgreich": false
+}
+
+### Bestellstatus ändern (Administrator; JSON-Enum als Zeichenfolge)
+PATCH {{baseUrl}}/api/bestellungen/{{bestellungId}}/status?status=InBearbeitung
+Authorization: Bearer {{zugriffstoken}}

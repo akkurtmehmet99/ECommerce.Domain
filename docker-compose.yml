@@ -1,0 +1,20 @@
+services:
+  ecommerce-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Authentifizierung__Signaturschluessel: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY muss gesetzt sein}
+      Administrator__EMail: ${ADMIN_EMAIL:-}
+      Administrator__Passwort: ${ADMIN_PASSWORD:-}
+      Administrator__Vorname: ${ADMIN_FIRST_NAME:-Shop}
+      Administrator__Nachname: ${ADMIN_LAST_NAME:-Administrator}
+    volumes:
+      - ecommerce-daten:/data
+    restart: unless-stopped
+
+volumes:
+  ecommerce-daten:
