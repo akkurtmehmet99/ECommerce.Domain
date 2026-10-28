@@ -1,0 +1,40 @@
+@page
+@model ECommerce.API.Pages.Bestellungen.IndexModel
+@{
+    ViewData["Title"] = "Meine Bestellungen";
+}
+<section class="section-wrap content-page">
+    <div class="section-heading"><div><span class="eyebrow">DEIN ÜBERBLICK</span><h1>Meine Bestellungen.</h1></div></div>
+    @if (Model.Bestellungen.Eintraege.Count == 0)
+    {
+        <div class="empty-state"><span class="empty-icon">↗</span><h2>Deine erste Bestellung wartet.</h2><p>Hier findest du bald alle deine Bestellungen auf einen Blick.</p><a class="button button-dark" asp-page="/Index">Sortiment entdecken</a></div>
+    }
+    else
+    {
+        <div class="order-list">
+            @foreach (var bestellung in Model.Bestellungen.Eintraege)
+            {
+                <a class="order-card" asp-page="/Bestellungen/Details" asp-route-id="@bestellung.Id">
+                    <div><span class="eyebrow">BESTELLUNG VOM @bestellung.ErstelltAm.ToLocalTime().ToString("dd. MMMM yyyy", CultureInfo.GetCultureInfo("de-DE"))</span><h2>@bestellung.Positionen.Count Artikel</h2><span class="order-id">Bestellnummer @bestellung.Id.ToString("N")[..8].ToUpperInvariant()</span></div>
+                    <span class="status-pill status-@bestellung.Status.ToString().ToLowerInvariant()">@Darstellung.StatusAnzeigen(bestellung.Status)</span>
+                    <strong>@Darstellung.Euro(bestellung.Gesamtbetrag)</strong>
+                    <span class="order-arrow" aria-hidden="true">→</span>
+                </a>
+            }
+        </div>
+        @if (Model.Bestellungen.Gesamtseiten > 1)
+        {
+            <nav class="pagination" aria-label="Bestellseiten">
+                @if (Model.Bestellungen.Seite > 1)
+                {
+                    <a class="button button-quiet" asp-page="/Bestellungen/Index" asp-route-seite="@(Model.Bestellungen.Seite - 1)">← Zurück</a>
+                }
+                <span>Seite @Model.Bestellungen.Seite von @Model.Bestellungen.Gesamtseiten</span>
+                @if (Model.Bestellungen.Seite < Model.Bestellungen.Gesamtseiten)
+                {
+                    <a class="button button-quiet" asp-page="/Bestellungen/Index" asp-route-seite="@(Model.Bestellungen.Seite + 1)">Weiter →</a>
+                }
+            </nav>
+        }
+    }
+</section>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f6f5f1" />
+    <title>@ViewData["Title"] – Morgenmarkt</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" asp-page="/Index" aria-label="Morgenmarkt Startseite">
+            <span class="brand-mark">m</span>
+            <span>Morgenmarkt</span>
+        </a>
+        <nav class="main-nav" aria-label="Hauptnavigation">
+            <a asp-page="/Index">Entdecken</a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-page="/Bestellungen/Index">Meine Bestellungen</a>
+                @if (User.IsInRole("Administrator"))
+                {
+                    <a asp-page="/Verwaltung/Index">Verwaltung</a>
+                }
+            }
+        </nav>
+        <div class="header-actions">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a class="button button-quiet" asp-page="/Warenkorb/Index">Warenkorb</a>
+                <span class="user-greeting">Hallo, @User.Identity.Name</span>
+                <form method="post" asp-page="/Konto/Abmelden">
+                    <button class="text-button" type="submit">Abmelden</button>
+                </form>
+            }
+            else
+            {
+                <a class="button button-quiet" asp-page="/Konto/Anmelden">Anmelden</a>
+                <a class="button button-dark" asp-page="/Konto/Registrieren">Konto erstellen</a>
+            }
+        </div>
+    </header>
+    <main>
+        @if (TempData["Erfolg"] is string erfolg)
+        {
+            <div class="notice notice-success" role="status">@erfolg</div>
+        }
+        @if (TempData["Fehler"] is string fehler)
+        {
+            <div class="notice notice-error" role="alert">@fehler</div>
+        }
+        @RenderBody()
+    </main>
+    <footer class="site-footer">
+        <a class="brand brand-small" asp-page="/Index"><span class="brand-mark">m</span> Morgenmarkt</a>
+        <span>Mit Sorgfalt ausgewählt. Für jeden Tag gemacht.</span>
+        <span>© @DateTime.UtcNow.Year Morgenmarkt</span>
+    </footer>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

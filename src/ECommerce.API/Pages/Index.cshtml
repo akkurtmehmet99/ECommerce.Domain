@@ -1,0 +1,102 @@
+@page
+@model ECommerce.API.Pages.IndexModel
+@{
+    ViewData["Title"] = "Dinge, die Freude machen";
+}
+<section class="hero">
+    <div class="hero-copy">
+        <span class="eyebrow">GUT AUSGESUCHT. GERN GENUTZT.</span>
+        <h1>Dinge, die den Alltag <em>schöner</em> machen.</h1>
+        <p>Entdecke durchdachte Lieblingsstücke für dein Zuhause und unterwegs – sorgfältig ausgewählt und direkt zu dir nach Hause.</p>
+        <a class="button button-dark" href="#sortiment">Sortiment entdecken <span aria-hidden="true">→</span></a>
+        <div class="hero-note"><span class="note-dot"></span> Kleine Auswahl, große Freude</div>
+    </div>
+    <div class="hero-art" aria-label="Illustration ausgewählter Produkte">
+        <div class="art-sun"></div><div class="art-circle"></div>
+        <div class="art-card art-card-back"><span>GUTER<br />GESCHMACK</span></div>
+        <div class="art-vase"><span></span></div>
+        <div class="art-card art-card-front"><span>für jeden<br />Tag.</span><b>MM</b></div>
+        <div class="art-stem"></div>
+        <div class="art-caption">DAS BESONDERE IM GEWÖHNLICHEN</div>
+    </div>
+</section>
+
+<section class="catalog section-wrap" id="sortiment">
+    <div class="section-heading">
+        <div><span class="eyebrow">UNSER SORTIMENT</span><h2>Finde dein neues Lieblingsstück.</h2></div>
+        <span class="result-count">@Model.Produkte.Gesamtanzahl Produkte</span>
+    </div>
+    <form class="filter-bar" method="get">
+        <label class="search-field">
+            <span class="visually-hidden">Produkte suchen</span>
+            <span aria-hidden="true">⌕</span>
+            <input name="suche" value="@Model.Suche" placeholder="Wonach suchst du?" maxlength="100" />
+        </label>
+        <label class="select-field">
+            <span class="visually-hidden">Kategorie auswählen</span>
+            <select name="kategorieId">
+                <option value="">Alle Kategorien</option>
+                @foreach (var kategorie in Model.Kategorien)
+                {
+                    <option value="@kategorie.Id" selected="@(Model.KategorieId == kategorie.Id)">@kategorie.Name</option>
+                }
+            </select>
+        </label>
+        <button class="button button-dark" type="submit">Suchen</button>
+        @if (!string.IsNullOrWhiteSpace(Model.Suche) || Model.KategorieId.HasValue)
+        {
+            <a class="clear-filter" asp-page="/Index">Filter zurücksetzen</a>
+        }
+    </form>
+    @if (Model.Produkte.Eintraege.Count == 0)
+    {
+        <div class="empty-state"><span class="empty-icon">⌕</span><h3>Nichts gefunden – noch nicht.</h3><p>Versuche einen anderen Suchbegriff oder setze die Filter zurück.</p></div>
+    }
+    else
+    {
+        <div class="product-grid">
+            @foreach (var produkt in Model.Produkte.Eintraege)
+            {
+                <article class="product-card">
+                    <a class="product-art product-art-@((Model.ArtIndex++ % 4) + 1)" asp-page="/Produkte/Details" asp-route-id="@produkt.Id" aria-label="@produkt.Name ansehen">
+                        <span class="product-category">@produkt.KategorieName</span>
+                        <span class="product-symbol" aria-hidden="true">@Model.SymbolFuer(produkt.KategorieName)</span>
+                        @if (produkt.Lagerbestand <= 3)
+                        {
+                            <span class="stock-label">Nur noch @produkt.Lagerbestand verfügbar</span>
+                        }
+                    </a>
+                    <div class="product-info">
+                        <div><h3><a asp-page="/Produkte/Details" asp-route-id="@produkt.Id">@produkt.Name</a></h3><p>@produkt.Beschreibung</p></div>
+                        <strong>@Darstellung.Euro(produkt.Preis)</strong>
+                    </div>
+                    <form method="post" asp-page-handler="InWarenkorb">
+                        <input type="hidden" name="produktId" value="@produkt.Id" />
+                        <button class="button button-outline product-add" type="submit" disabled="@(produkt.Lagerbestand == 0)">
+                            @(produkt.Lagerbestand == 0 ? "Derzeit ausverkauft" : "In den Warenkorb legen")
+                        </button>
+                    </form>
+                </article>
+            }
+        </div>
+        @if (Model.Produkte.Gesamtseiten > 1)
+        {
+            <nav class="pagination" aria-label="Produktseiten">
+                @if (Model.Produkte.Seite > 1)
+                {
+                    <a class="button button-quiet" asp-page="/Index" asp-route-seite="@(Model.Produkte.Seite - 1)" asp-route-suche="@Model.Suche" asp-route-kategorieId="@Model.KategorieId">← Zurück</a>
+                }
+                <span>Seite @Model.Produkte.Seite von @Model.Produkte.Gesamtseiten</span>
+                @if (Model.Produkte.Seite < Model.Produkte.Gesamtseiten)
+                {
+                    <a class="button button-quiet" asp-page="/Index" asp-route-seite="@(Model.Produkte.Seite + 1)" asp-route-suche="@Model.Suche" asp-route-kategorieId="@Model.KategorieId">Weiter →</a>
+                }
+            </nav>
+        }
+    }
+</section>
+<section class="promise-strip">
+    <div><span>✳</span><strong>Mit Bedacht gewählt</strong><small>Weniger, aber besser.</small></div>
+    <div><span>↗</span><strong>Einfach bestellt</strong><small>In wenigen Schritten bei dir.</small></div>
+    <div><span>♡</span><strong>Persönlich gedacht</strong><small>Für echte Alltagsmomente.</small></div>
+</section>

@@ -1,0 +1,25 @@
+@page
+@model ECommerce.API.Pages.Konto.AnmeldenModel
+@{
+    ViewData["Title"] = "Anmelden";
+}
+<section class="account-wrap">
+    <div class="account-aside"><span class="eyebrow">SCHÖN, DASS DU DA BIST</span><h1>Deine Lieblingsstücke sind nur einen Klick entfernt.</h1><p>Melde dich an und behalte deine Bestellungen im Blick.</p><span class="aside-flower">✳</span></div>
+    <div class="account-card">
+        <span class="eyebrow">WILLKOMMEN ZURÜCK</span>
+        <h2>Anmelden</h2>
+        <p class="form-intro">Melde dich mit deinem Kundenkonto an.</p>
+        <form method="post" class="form-stack">
+            <input type="hidden" asp-for="ReturnUrl" />
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+            <label asp-for="Eingabe.EMail">E-Mail-Adresse</label>
+            <input asp-for="Eingabe.EMail" autocomplete="email" placeholder="name@beispiel.de" />
+            <span asp-validation-for="Eingabe.EMail" class="field-error"></span>
+            <label asp-for="Eingabe.Passwort">Passwort</label>
+            <input asp-for="Eingabe.Passwort" autocomplete="current-password" />
+            <span asp-validation-for="Eingabe.Passwort" class="field-error"></span>
+            <button class="button button-dark button-wide" type="submit">Anmelden <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="account-switch">Noch kein Konto? <a asp-page="/Konto/Registrieren">Jetzt registrieren</a></p>
+    </div>
+</section>

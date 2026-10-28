@@ -56,7 +56,10 @@ namespace ECommerce.Persistence.Migrationen
 
                     b.HasIndex("ProduktId");
 
-                    b.ToTable("Bestellpositionen", (string)null);
+                    b.ToTable("Bestellpositionen", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Bestellpositionen_Menge_Positiv", "\"Menge\" > 0");
+                        });
                 });
 
             modelBuilder.Entity("ECommerce.Domain.Entities.Bestellung", b =>
@@ -154,6 +157,8 @@ namespace ECommerce.Persistence.Migrationen
                     b.HasIndex("Name")
                         .IsUnique();
 
+                    b.HasIndex("Aktiv", "Geloescht", "Name");
+
                     b.ToTable("Kategorien", (string)null);
                 });
 
@@ -250,7 +255,12 @@ namespace ECommerce.Persistence.Migrationen
 
                     b.HasIndex("KategorieId");
 
-                    b.ToTable("Produkte", (string)null);
+                    b.HasIndex("Aktiv", "Geloescht", "KategorieId", "Name");
+
+                    b.ToTable("Produkte", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Produkte_Lagerbestand_NichtNegativ", "\"Lagerbestand\" >= 0");
+                        });
                 });
 
             modelBuilder.Entity("ECommerce.Domain.Entities.Sitzungstoken", b =>
@@ -353,7 +363,10 @@ namespace ECommerce.Persistence.Migrationen
                     b.HasIndex("WarenkorbId", "ProduktId")
                         .IsUnique();
 
-                    b.ToTable("Warenkorbpositionen", (string)null);
+                    b.ToTable("Warenkorbpositionen", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Warenkorbpositionen_Menge_Gueltig", "\"Menge\" BETWEEN 1 AND 100");
+                        });
                 });
 
             modelBuilder.Entity("ECommerce.Domain.Entities.Zahlung", b =>

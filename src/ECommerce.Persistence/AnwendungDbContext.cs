@@ -22,11 +22,39 @@ public sealed class AnwendungDbContext : DbContext, IApplicationDbContext
     public DbSet<Zahlung> Zahlungen => Set<Zahlung>();
     public DbSet<Sitzungstoken> Sitzungstoken => Set<Sitzungstoken>();
 
+    public async Task<IReadOnlyList<Bestellung>> BestellseiteLadenAsync(
+        Guid? kundeId,
+        int ueberspringen,
+        int anzahl,
+        CancellationToken cancellationToken)
+    {
+        var idsAbfrage = kundeId.HasValue
+            ? Database.SqlQuery<Guid>(
+                $"SELECT \"Id\" AS \"Value\" FROM \"Bestellungen\" WHERE \"Geloescht\" = 0 AND \"KundeId\" = {kundeId.Value} ORDER BY \"ErstelltAm\" DESC LIMIT {anzahl} OFFSET {ueberspringen}")
+            : Database.SqlQuery<Guid>(
+                $"SELECT \"Id\" AS \"Value\" FROM \"Bestellungen\" WHERE \"Geloescht\" = 0 ORDER BY \"ErstelltAm\" DESC LIMIT {anzahl} OFFSET {ueberspringen}");
+
+        // SQLite speichert die UTC-Zeitstempel als Text und EF Core kann DateTimeOffset nicht sortieren.
+        var ids = await idsAbfrage.ToListAsync(cancellationToken);
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var eintraege = await Bestellungen.AsNoTracking()
+            .Where(bestellung => ids.Contains(bestellung.Id))
+            .Include(bestellung => bestellung.Positionen)
+            .ToListAsync(cancellationToken);
+        var nachId = eintraege.ToDictionary(bestellung => bestellung.Id);
+        return ids.Select(id => nachId[id]).ToList();
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Produkt>(entity =>
         {
-            entity.ToTable("Produkte");
+            entity.ToTable("Produkte", tabelle =>
+                tabelle.HasCheckConstraint("CK_Produkte_Lagerbestand_NichtNegativ", "\"Lagerbestand\" >= 0"));
             entity.Property(produkt => produkt.Name).HasMaxLength(100).IsRequired();
             entity.Property(produkt => produkt.Beschreibung).HasMaxLength(500);
             entity.Property(produkt => produkt.Preis).HasPrecision(18, 2);
@@ -35,6 +63,13 @@ public sealed class AnwendungDbContext : DbContext, IApplicationDbContext
                 .HasForeignKey(produkt => produkt.KategorieId)
                 .OnDelete(DeleteBehavior.Restrict);
             entity.HasIndex(produkt => produkt.KategorieId);
+            entity.HasIndex(produkt => new
+            {
+                produkt.Aktiv,
+                produkt.Geloescht,
+                produkt.KategorieId,
+                produkt.Name
+            });
         });
 
         modelBuilder.Entity<Kategorie>(entity =>
@@ -43,6 +78,7 @@ public sealed class AnwendungDbContext : DbContext, IApplicationDbContext
             entity.Property(kategorie => kategorie.Name).HasMaxLength(100).IsRequired();
             entity.Property(kategorie => kategorie.Beschreibung).HasMaxLength(500);
             entity.HasIndex(kategorie => kategorie.Name).IsUnique();
+            entity.HasIndex(kategorie => new { kategorie.Aktiv, kategorie.Geloescht, kategorie.Name });
         });
 
         modelBuilder.Entity<Kunde>(entity =>
@@ -68,7 +104,8 @@ public sealed class AnwendungDbContext : DbContext, IApplicationDbContext
 
         modelBuilder.Entity<Warenkorbposition>(entity =>
         {
-            entity.ToTable("Warenkorbpositionen");
+            entity.ToTable("Warenkorbpositionen", tabelle =>
+                tabelle.HasCheckConstraint("CK_Warenkorbpositionen_Menge_Gueltig", "\"Menge\" BETWEEN 1 AND 100"));
             entity.HasIndex(position => new { position.WarenkorbId, position.ProduktId }).IsUnique();
             entity.HasOne(position => position.Warenkorb)
                 .WithMany(warenkorb => warenkorb.Positionen)
@@ -100,7 +137,8 @@ public sealed class AnwendungDbContext : DbContext, IApplicationDbContext
 
         modelBuilder.Entity<Bestellposition>(entity =>
         {
-            entity.ToTable("Bestellpositionen");
+            entity.ToTable("Bestellpositionen", tabelle =>
+                tabelle.HasCheckConstraint("CK_Bestellpositionen_Menge_Positiv", "\"Menge\" > 0"));
             entity.Property(position => position.Produktname).HasMaxLength(100).IsRequired();
             entity.Property(position => position.Einzelpreis).HasPrecision(18, 2);
             entity.HasOne(position => position.Bestellung)

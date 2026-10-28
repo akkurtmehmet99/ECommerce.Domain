@@ -1,0 +1,14 @@
+@page
+@model ECommerce.API.Pages.Verwaltung.IndexModel
+@{
+    ViewData["Title"] = "Verwaltung";
+}
+<section class="section-wrap content-page">
+    <span class="eyebrow">MORGENMARKT INTERN</span>
+    <h1>Verwaltung.</h1>
+    <p class="page-lead">Produkte pflegen und Bestellungen zuverlässig im Blick behalten.</p>
+    <div class="admin-links">
+        <a class="admin-link-card" asp-page="/Verwaltung/Produkte"><span class="admin-icon">✦</span><span class="eyebrow">SORTIMENT</span><h2>Produkte & Kategorien</h2><p>Artikel anlegen, aktualisieren und verwalten.</p><span class="admin-link-arrow">Zum Sortiment →</span></a>
+        <a class="admin-link-card" asp-page="/Verwaltung/Bestellungen"><span class="admin-icon">↗</span><span class="eyebrow">ABWICKLUNG</span><h2>Bestellungen</h2><p>Bestellstatus prüfen und weiterverarbeiten.</p><span class="admin-link-arrow">Zu den Bestellungen →</span></a>
+    </div>
+</section>

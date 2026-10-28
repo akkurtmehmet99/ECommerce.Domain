@@ -1,0 +1,27 @@
+@page "{id:guid}"
+@model ECommerce.API.Pages.Bestellungen.DetailsModel
+@{
+    ViewData["Title"] = "Bestelldetails";
+}
+<section class="section-wrap content-page">
+    <a class="back-link" asp-page="/Bestellungen/Index">← Zurück zu meinen Bestellungen</a>
+    <div class="section-heading"><div><span class="eyebrow">BESTELLUNG VOM @Model.Bestellung.ErstelltAm.ToLocalTime().ToString("dd. MMMM yyyy", CultureInfo.GetCultureInfo("de-DE"))</span><h1>Deine Bestellung.</h1><p class="order-id">Bestellnummer @Model.Bestellung.Id.ToString("N")[..8].ToUpperInvariant()</p></div><span class="status-pill status-@Model.Bestellung.Status.ToString().ToLowerInvariant()">@Darstellung.StatusAnzeigen(Model.Bestellung.Status)</span></div>
+    <div class="cart-layout">
+        <div class="order-detail-card">
+            <h2>Deine Artikel</h2>
+            @foreach (var position in Model.Bestellung.Positionen)
+            {
+                <div class="cart-line order-line"><div class="cart-product-icon" aria-hidden="true">✦</div><div class="cart-line-info"><h3>@position.Produktname</h3><span>@position.Menge × @Darstellung.Euro(position.Einzelpreis)</span></div><strong>@Darstellung.Euro(position.Gesamtbetrag)</strong></div>
+            }
+            <div class="summary-total"><span>Gesamtbetrag</span><strong>@Darstellung.Euro(Model.Bestellung.Gesamtbetrag)</strong></div>
+        </div>
+        <aside class="summary-card"><span class="eyebrow">LIEFERUNG</span><h2>@Model.Bestellung.Liefername</h2><p>@Model.Bestellung.Lieferstrasse<br />@Model.Bestellung.LieferPostleitzahl @Model.Bestellung.LieferStadt<br />@Model.Bestellung.LieferLand</p>
+            @if (Model.Bestellung.Status == Bestellstatus.Ausstehend)
+            {
+                <hr />
+                <p class="sandbox-note">Nur eine Testzahlung: Es werden keine echten Zahlungsdaten verwendet.</p>
+                <form method="post" asp-page-handler="Zahlen"><button class="button button-dark button-wide" type="submit">Sandbox-Zahlung simulieren</button></form>
+            }
+        </aside>
+    </div>
+</section>

@@ -1,13 +1,17 @@
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Globalization;
 using ECommerce.Application;
+using ECommerce.Application.Common.Interfaces;
 using ECommerce.API.Middleware;
 using ECommerce.Domain.Entities;
 using ECommerce.Persistence;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -58,6 +62,15 @@ builder.Services.AddControllers()
             return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(problem);
         };
     });
+builder.Services.AddRazorPages(optionen =>
+{
+    optionen.Conventions.AuthorizeFolder("/Warenkorb");
+    optionen.Conventions.AuthorizeFolder("/Bestellungen");
+    optionen.Conventions.AuthorizeFolder("/Verwaltung");
+    optionen.Conventions.AllowAnonymousToPage("/Konto/Anmelden");
+    optionen.Conventions.AllowAnonymousToPage("/Konto/Registrieren");
+    optionen.Conventions.AllowAnonymousToPage("/Konto/Abmelden");
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(optionen =>
 {
@@ -78,8 +91,69 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiAusnahmeHandler>();
 builder.Services.AddHealthChecks()
     .AddCheck<DatenbankGesundheitspruefung>("datenbank");
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(optionen =>
+builder.Services.AddAuthentication(optionen =>
+    {
+        optionen.DefaultScheme = "Anwendung";
+        optionen.DefaultChallengeScheme = "Anwendung";
+    })
+    .AddPolicyScheme("Anwendung", "Web- oder API-Authentifizierung", optionen =>
+    {
+        optionen.ForwardDefaultSelector = httpKontext =>
+            httpKontext.Request.Path.StartsWithSegments("/api")
+                ? JwtBearerDefaults.AuthenticationScheme
+                : "WebCookie";
+    })
+    .AddCookie("WebCookie", optionen =>
+    {
+        optionen.LoginPath = "/Konto/Anmelden";
+        optionen.AccessDeniedPath = "/Konto/KeinZugriff";
+        optionen.Cookie.Name = "ECommerce.Sitzung";
+        optionen.Cookie.HttpOnly = true;
+        optionen.Cookie.SameSite = SameSiteMode.Lax;
+        optionen.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        optionen.ExpireTimeSpan = TimeSpan.FromDays(30);
+        optionen.SlidingExpiration = false;
+        optionen.Events.OnValidatePrincipal = async authentifizierungsKontext =>
+        {
+            var principal = authentifizierungsKontext.Principal;
+            var aktualisierungstoken = principal?.FindFirstValue("Aktualisierungstoken");
+            if (string.IsNullOrWhiteSpace(aktualisierungstoken))
+            {
+                authentifizierungsKontext.RejectPrincipal();
+                await authentifizierungsKontext.HttpContext.SignOutAsync("WebCookie");
+                return;
+            }
+
+            var dienste = authentifizierungsKontext.HttpContext.RequestServices;
+            var kontext = dienste.GetRequiredService<AnwendungDbContext>();
+            var tokenDienst = dienste.GetRequiredService<ITokenDienst>();
+            var tokenHash = tokenDienst.AktualisierungstokenHashen(aktualisierungstoken);
+            var kunde = await kontext.Sitzungstoken
+                .AsNoTracking()
+                .Where(token => token.Hash == tokenHash && token.WiderrufenAm == null)
+                .Select(token => new
+                {
+                    token.KundeId,
+                    token.Ablaufzeitpunkt,
+                    token.Kunde.Rolle,
+                    token.Kunde.Aktiv,
+                    token.Kunde.Geloescht
+                })
+                .SingleOrDefaultAsync(authentifizierungsKontext.HttpContext.RequestAborted);
+
+            if (kunde is null ||
+                kunde.Ablaufzeitpunkt <= DateTimeOffset.UtcNow ||
+                !kunde.Aktiv ||
+                kunde.Geloescht ||
+                principal?.FindFirstValue(ClaimTypes.NameIdentifier) != kunde.KundeId.ToString() ||
+                principal.FindFirstValue(ClaimTypes.Role) != kunde.Rolle)
+            {
+                authentifizierungsKontext.RejectPrincipal();
+                await authentifizierungsKontext.HttpContext.SignOutAsync("WebCookie");
+            }
+        };
+    })
+    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, optionen =>
     {
         optionen.MapInboundClaims = false;
         optionen.TokenValidationParameters = new TokenValidationParameters
@@ -114,6 +188,13 @@ builder.Services.AddRateLimiter(optionen =>
 
 var app = builder.Build();
 
+var deutscheKultur = CultureInfo.GetCultureInfo("de-DE");
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(deutscheKultur),
+    SupportedCultures = [deutscheKultur],
+    SupportedUICultures = [deutscheKultur]
+});
 app.UseExceptionHandler();
 app.UseStatusCodePages(async (StatusCodeContext statusKontext) =>
 {
@@ -144,16 +225,22 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseHealthChecks("/gesundheit");
 app.MapControllers();
+app.MapRazorPages();
 
 await using (var bereich = app.Services.CreateAsyncScope())
 {
     var dbKontext = bereich.ServiceProvider.GetRequiredService<AnwendungDbContext>();
     await dbKontext.Database.MigrateAsync();
+    if (app.Environment.IsDevelopment())
+    {
+        await BeispieldatenInitialisierung.BeispieldatenErstellenAsync(dbKontext);
+    }
     await AdministratorInitialisierung.AdministratorErstellenWennKonfiguriertAsync(
         dbKontext,
         app.Configuration,

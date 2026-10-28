@@ -172,7 +172,12 @@ public sealed class BestellungHandler :
     {
         var bestellungen = _kontext.Bestellungen.AsNoTracking()
             .Where(bestellung => bestellung.KundeId == abfrage.KundeId && !bestellung.Geloescht);
-        return await SeiteLaden(bestellungen, abfrage.Seite, abfrage.Seitengroesse, abbrechToken);
+        return await SeiteLaden(
+            bestellungen,
+            abfrage.KundeId,
+            abfrage.Seite,
+            abfrage.Seitengroesse,
+            abbrechToken);
     }
 
     public async Task<Seitenergebnis<BestellungDto>> Handle(
@@ -181,22 +186,27 @@ public sealed class BestellungHandler :
     {
         var bestellungen = _kontext.Bestellungen.AsNoTracking()
             .Where(bestellung => !bestellung.Geloescht);
-        return await SeiteLaden(bestellungen, abfrage.Seite, abfrage.Seitengroesse, abbrechToken);
+        return await SeiteLaden(
+            bestellungen,
+            null,
+            abfrage.Seite,
+            abfrage.Seitengroesse,
+            abbrechToken);
     }
 
-    private static async Task<Seitenergebnis<BestellungDto>> SeiteLaden(
+    private async Task<Seitenergebnis<BestellungDto>> SeiteLaden(
         IQueryable<Bestellung> abfrage,
+        Guid? kundeId,
         int seite,
         int seitengroesse,
         CancellationToken abbrechToken)
     {
         var gesamtanzahl = await abfrage.CountAsync(abbrechToken);
-        var bestellungen = await abfrage
-            .Include(bestellung => bestellung.Positionen)
-            .OrderByDescending(bestellung => bestellung.ErstelltAm)
-            .Skip((seite - 1) * seitengroesse)
-            .Take(seitengroesse)
-            .ToListAsync(abbrechToken);
+        var bestellungen = await _kontext.BestellseiteLadenAsync(
+            kundeId,
+            (seite - 1) * seitengroesse,
+            seitengroesse,
+            abbrechToken);
         return new Seitenergebnis<BestellungDto>(
             bestellungen.Select(Abbilden).ToList(),
             seite,

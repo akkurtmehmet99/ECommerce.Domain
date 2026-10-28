@@ -7,7 +7,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ECommerce.Application.Features.Produkte.Queries.ProduktListeAbfragen;
 
-public sealed record ProduktListeAbfragenQuery(int Seite = 1, int Seitengroesse = 20)
+public sealed record ProduktListeAbfragenQuery(
+    int Seite = 1,
+    int Seitengroesse = 20,
+    string? Suchbegriff = null,
+    Guid? KategorieId = null)
     : IRequest<Seitenergebnis<ProduktDto>>;
 
 public sealed class ProduktListeAbfragenValidator : AbstractValidator<ProduktListeAbfragenQuery>
@@ -16,6 +20,7 @@ public sealed class ProduktListeAbfragenValidator : AbstractValidator<ProduktLis
     {
         RuleFor(abfrage => abfrage.Seite).InclusiveBetween(1, 1_000_000);
         RuleFor(abfrage => abfrage.Seitengroesse).InclusiveBetween(1, 100);
+        RuleFor(abfrage => abfrage.Suchbegriff).MaximumLength(100);
     }
 }
 
@@ -39,6 +44,18 @@ public sealed class ProduktListeAbfragenQueryHandler
                               !produkt.Geloescht &&
                               produkt.Kategorie.Aktiv &&
                               !produkt.Kategorie.Geloescht);
+        if (!string.IsNullOrWhiteSpace(request.Suchbegriff))
+        {
+            var suchbegriff = request.Suchbegriff.Trim();
+            produkte = produkte.Where(produkt =>
+                produkt.Name.Contains(suchbegriff) ||
+                produkt.Beschreibung.Contains(suchbegriff));
+        }
+
+        if (request.KategorieId.HasValue)
+        {
+            produkte = produkte.Where(produkt => produkt.KategorieId == request.KategorieId.Value);
+        }
         var gesamtanzahl = await produkte.CountAsync(cancellationToken);
         var eintraege = await produkte
             .OrderBy(produkt => produkt.Name)

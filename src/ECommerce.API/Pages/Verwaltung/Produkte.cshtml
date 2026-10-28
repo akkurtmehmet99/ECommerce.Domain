@@ -1,0 +1,68 @@
+@page
+@model ECommerce.API.Pages.Verwaltung.ProdukteModel
+@{
+    ViewData["Title"] = "Produkte verwalten";
+}
+<section class="section-wrap content-page">
+    <a class="back-link" asp-page="/Verwaltung/Index">← Zurück zur Verwaltung</a>
+    <div class="section-heading"><div><span class="eyebrow">SORTIMENT PFLEGEN</span><h1>Produkte & Kategorien.</h1></div></div>
+    <div class="admin-columns">
+        <section class="admin-panel">
+            <span class="eyebrow">NEU IM SORTIMENT</span><h2>Produkt anlegen</h2>
+            <form method="post" asp-page-handler="ProduktErstellen" class="form-stack">
+                <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+                <label for="produkt-name">Produktname</label><input id="produkt-name" name="name" required minlength="2" maxlength="100" />
+                <label for="produkt-beschreibung">Beschreibung</label><textarea id="produkt-beschreibung" name="beschreibung" maxlength="500" rows="3"></textarea>
+                <div class="form-row"><div><label for="produkt-preis">Preis in EUR</label><input id="produkt-preis" name="preis" type="text" inputmode="decimal" pattern="[0-9]+([,][0-9]{1,2})?" placeholder="29,90" required /></div><div><label for="produkt-bestand">Lagerbestand</label><input id="produkt-bestand" name="lagerbestand" type="number" min="0" step="1" value="0" required /></div></div>
+                <label for="produkt-kategorie">Kategorie</label><select id="produkt-kategorie" name="kategorieId" required><option value="">Bitte auswählen</option>@foreach (var kategorie in Model.Kategorien){<option value="@kategorie.Id">@kategorie.Name</option>}</select>
+                <button class="button button-dark" type="submit">Produkt anlegen</button>
+            </form>
+        </section>
+        <section class="admin-panel">
+            <span class="eyebrow">KATEGORIEN</span><h2>Neue Kategorie</h2>
+            <form method="post" asp-page-handler="KategorieErstellen" class="form-stack">
+                <label for="kategorie-name">Name</label><input id="kategorie-name" name="name" required maxlength="100" />
+                <label for="kategorie-beschreibung">Beschreibung</label><textarea id="kategorie-beschreibung" name="beschreibung" maxlength="500" rows="3"></textarea>
+                <button class="button button-outline" type="submit">Kategorie anlegen</button>
+            </form>
+            <div class="category-tags">@foreach (var kategorie in Model.Kategorien){<span>@kategorie.Name</span>}</div>
+        </section>
+    </div>
+    <div class="admin-list-heading"><div><span class="eyebrow">AKTUELLER BESTAND</span><h2>Produkte</h2></div><span class="result-count">@Model.Produkte.Gesamtanzahl Artikel</span></div>
+    <div class="admin-product-list">
+        @foreach (var produkt in Model.Produkte.Eintraege)
+        {
+            <details class="admin-product">
+                <summary><span class="admin-product-icon">✦</span><span><strong>@produkt.Name</strong><small>@produkt.KategorieName · @produkt.Lagerbestand auf Lager</small></span><strong>@Darstellung.Euro(produkt.Preis)</strong><span class="details-chevron">⌄</span></summary>
+                <div class="admin-edit-body">
+                    <form method="post" asp-page-handler="ProduktAktualisieren" class="form-stack">
+                        <input type="hidden" name="produktId" value="@produkt.Id" />
+                        <label for="name-@produkt.Id">Produktname</label><input id="name-@produkt.Id" name="name" value="@produkt.Name" required minlength="2" maxlength="100" />
+                        <label for="beschreibung-@produkt.Id">Beschreibung</label><textarea id="beschreibung-@produkt.Id" name="beschreibung" maxlength="500" rows="2">@produkt.Beschreibung</textarea>
+                        <div class="form-row"><div><label for="preis-@produkt.Id">Preis in EUR</label><input id="preis-@produkt.Id" name="preis" type="text" inputmode="decimal" pattern="[0-9]+([,][0-9]{1,2})?" value="@produkt.Preis.ToString("0.00", CultureInfo.GetCultureInfo("de-DE"))" required /></div><div><label for="bestand-@produkt.Id">Lagerbestand</label><input id="bestand-@produkt.Id" name="lagerbestand" type="number" min="0" value="@produkt.Lagerbestand" required /></div></div>
+                        <label for="kategorie-@produkt.Id">Kategorie</label><select id="kategorie-@produkt.Id" name="kategorieId" required>@foreach (var kategorie in Model.Kategorien){<option value="@kategorie.Id" selected="@(kategorie.Id == produkt.KategorieId)">@kategorie.Name</option>}</select>
+                        <button class="button button-dark" type="submit">Änderungen speichern</button>
+                    </form>
+                    <form method="post" asp-page-handler="ProduktDeaktivieren" class="deactivate-form" onsubmit="return confirm('Produkt wirklich aus dem Sortiment nehmen?');">
+                        <input type="hidden" name="produktId" value="@produkt.Id" />
+                        <button class="text-button text-danger" type="submit">Produkt deaktivieren</button>
+                    </form>
+                </div>
+            </details>
+        }
+    </div>
+    @if (Model.Produkte.Gesamtseiten > 1)
+    {
+        <nav class="pagination" aria-label="Produktseiten der Verwaltung">
+            @if (Model.Produkte.Seite > 1)
+            {
+                <a class="button button-quiet" asp-page="/Verwaltung/Produkte" asp-route-seite="@(Model.Produkte.Seite - 1)">← Zurück</a>
+            }
+            <span>Seite @Model.Produkte.Seite von @Model.Produkte.Gesamtseiten</span>
+            @if (Model.Produkte.Seite < Model.Produkte.Gesamtseiten)
+            {
+                <a class="button button-quiet" asp-page="/Verwaltung/Produkte" asp-route-seite="@(Model.Produkte.Seite + 1)">Weiter →</a>
+            }
+        </nav>
+    }
+</section>

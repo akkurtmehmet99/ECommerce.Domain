@@ -1,0 +1,43 @@
+@page
+@model ECommerce.API.Pages.Bestellungen.CheckoutModel
+@{
+    ViewData["Title"] = "Zur Kasse";
+}
+<section class="section-wrap content-page checkout-page">
+    <a class="back-link" asp-page="/Warenkorb/Index">← Zurück zum Warenkorb</a>
+    <div class="section-heading"><div><span class="eyebrow">FAST GESCHAFFT</span><h1>Wohin dürfen wir liefern?</h1></div></div>
+    @if (Model.Warenkorb.Positionen.Count > 0)
+    {
+        <div class="cart-layout">
+            <form method="post" class="account-card checkout-form">
+                <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+                <label asp-for="Adresse.Liefername">Name der empfangenden Person</label>
+                <input asp-for="Adresse.Liefername" autocomplete="name" />
+                <span asp-validation-for="Adresse.Liefername" class="field-error"></span>
+                <label asp-for="Adresse.Lieferstrasse">Straße und Hausnummer</label>
+                <input asp-for="Adresse.Lieferstrasse" autocomplete="street-address" placeholder="Musterstraße 12" />
+                <span asp-validation-for="Adresse.Lieferstrasse" class="field-error"></span>
+                <div class="form-row">
+                    <div><label asp-for="Adresse.LieferPostleitzahl">Postleitzahl</label><input asp-for="Adresse.LieferPostleitzahl" autocomplete="postal-code" /><span asp-validation-for="Adresse.LieferPostleitzahl" class="field-error"></span></div>
+                    <div><label asp-for="Adresse.LieferStadt">Stadt</label><input asp-for="Adresse.LieferStadt" autocomplete="address-level2" /><span asp-validation-for="Adresse.LieferStadt" class="field-error"></span></div>
+                </div>
+                <label asp-for="Adresse.LieferLand">Ländercode (ISO 3166-1 alpha-2)</label>
+                <input asp-for="Adresse.LieferLand" autocomplete="country" maxlength="2" />
+                <span class="field-hint">Für Deutschland: DE</span>
+                <span asp-validation-for="Adresse.LieferLand" class="field-error"></span>
+                <p class="sandbox-note">Diese Demo verwendet ausschließlich simulierte Sandbox-Zahlungen. Es werden keine echten Zahlungsdaten verarbeitet.</p>
+                <button class="button button-dark button-wide" type="submit">Bestellung aufgeben <span aria-hidden="true">→</span></button>
+            </form>
+            <aside class="summary-card">
+                <span class="eyebrow">DEINE BESTELLUNG</span>
+                <h2>@Model.Warenkorb.Gesamtmenge Artikel</h2>
+                @foreach (var position in Model.Warenkorb.Positionen)
+                {
+                    <div class="summary-row"><span>@position.Menge × @position.Produktname</span><strong>@Darstellung.Euro(position.Gesamtbetrag)</strong></div>
+                }
+                <div class="summary-row"><span>Versand</span><strong>Kostenlos</strong></div>
+                <div class="summary-total"><span>Gesamtbetrag</span><strong>@Darstellung.Euro(Model.Warenkorb.Gesamtbetrag)</strong></div>
+            </aside>
+        </div>
+    }
+</section>

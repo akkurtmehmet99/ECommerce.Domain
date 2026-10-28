@@ -1,0 +1,26 @@
+@page "{id:guid}"
+@model ECommerce.API.Pages.Produkte.DetailsModel
+@{
+    ViewData["Title"] = Model.Produkt.Name;
+}
+<section class="detail-wrap">
+    <a class="back-link" asp-page="/Index">← Zurück zum Sortiment</a>
+    <div class="detail-card">
+        <div class="detail-art product-art-@((Model.Produkt.KategorieId.GetHashCode() & 3) + 1)">
+            <span class="product-category">@Model.Produkt.KategorieName</span>
+            <span class="detail-symbol" aria-hidden="true">✦</span>
+        </div>
+        <div class="detail-copy">
+            <span class="eyebrow">MIT BEDACHT AUSGESUCHT</span>
+            <h1>@Model.Produkt.Name</h1>
+            <p class="detail-description">@Model.Produkt.Beschreibung</p>
+            <div class="detail-price">@Darstellung.Euro(Model.Produkt.Preis)</div>
+            <p class="stock-status"><span class="note-dot"></span> @(Model.Produkt.Lagerbestand > 0 ? $"{Model.Produkt.Lagerbestand} Stück auf Lager" : "Derzeit nicht verfügbar")</p>
+            <form method="post" asp-page="/Index" asp-page-handler="InWarenkorb">
+                <input type="hidden" name="produktId" value="@Model.Produkt.Id" />
+                <button class="button button-dark button-wide" disabled="@(Model.Produkt.Lagerbestand == 0)" type="submit">In den Warenkorb legen <span aria-hidden="true">→</span></button>
+            </form>
+            <p class="sandbox-note">Sichere Demo-Bestellung. Zahlungen werden nur in der Sandbox simuliert.</p>
+        </div>
+    </div>
+</section>

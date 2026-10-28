@@ -1,0 +1,29 @@
+@page
+@model ECommerce.API.Pages.Konto.RegistrierenModel
+@{
+    ViewData["Title"] = "Konto erstellen";
+}
+<section class="account-wrap">
+    <div class="account-aside"><span class="eyebrow">DEIN NEUER LIEBLINGSORT</span><h1>Ein gutes Stück Alltag beginnt mit einem Konto.</h1><p>Lege dein Konto an und entdecke sorgfältig ausgewählte Dinge für jeden Tag.</p><span class="aside-flower">✳</span></div>
+    <div class="account-card">
+        <span class="eyebrow">IN WENIGEN SCHRITTEN</span>
+        <h2>Konto erstellen</h2>
+        <p class="form-intro">Deine Angaben bleiben bei uns sicher.</p>
+        <form method="post" class="form-stack">
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+            <div class="form-row">
+                <div><label asp-for="Eingabe.Vorname">Vorname</label><input asp-for="Eingabe.Vorname" autocomplete="given-name" /><span asp-validation-for="Eingabe.Vorname" class="field-error"></span></div>
+                <div><label asp-for="Eingabe.Nachname">Nachname</label><input asp-for="Eingabe.Nachname" autocomplete="family-name" /><span asp-validation-for="Eingabe.Nachname" class="field-error"></span></div>
+            </div>
+            <label asp-for="Eingabe.EMail">E-Mail-Adresse</label>
+            <input asp-for="Eingabe.EMail" autocomplete="email" placeholder="name@beispiel.de" />
+            <span asp-validation-for="Eingabe.EMail" class="field-error"></span>
+            <label asp-for="Eingabe.Passwort">Passwort</label>
+            <input asp-for="Eingabe.Passwort" autocomplete="new-password" />
+            <span class="field-hint">Mindestens 12 Zeichen, mit Groß- und Kleinbuchstaben sowie einer Zahl.</span>
+            <span asp-validation-for="Eingabe.Passwort" class="field-error"></span>
+            <button class="button button-dark button-wide" type="submit">Konto erstellen <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="account-switch">Du hast schon ein Konto? <a asp-page="/Konto/Anmelden">Jetzt anmelden</a></p>
+    </div>
+</section>

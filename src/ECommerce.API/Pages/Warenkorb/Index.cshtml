@@ -1,0 +1,46 @@
+@page
+@model ECommerce.API.Pages.Warenkorb.IndexModel
+@{
+    ViewData["Title"] = "Dein Warenkorb";
+}
+<section class="section-wrap content-page">
+    <a class="back-link" asp-page="/Index">← Weiter einkaufen</a>
+    <div class="section-heading"><div><span class="eyebrow">DEINE AUSWAHL</span><h1>Dein Warenkorb.</h1></div><span class="result-count">@Model.Warenkorb.Gesamtmenge Artikel</span></div>
+    @if (Model.Warenkorb.Positionen.Count == 0)
+    {
+        <div class="empty-state"><span class="empty-icon">♡</span><h2>Hier ist noch Platz für Schönes.</h2><p>Entdecke unser Sortiment und lege deine Favoriten in den Warenkorb.</p><a class="button button-dark" asp-page="/Index">Zum Sortiment</a></div>
+    }
+    else
+    {
+        <div class="cart-layout">
+            <div class="cart-lines">
+                @foreach (var position in Model.Warenkorb.Positionen)
+                {
+                    <article class="cart-line">
+                        <div class="cart-product-icon" aria-hidden="true">✦</div>
+                        <div class="cart-line-info"><h2>@position.Produktname</h2><span>@Darstellung.Euro(position.Einzelpreis) pro Stück</span></div>
+                        <form method="post" asp-page-handler="MengeAendern" class="quantity-form">
+                            <input type="hidden" name="positionId" value="@position.Id" />
+                            <label class="visually-hidden" for="menge-@position.Id">Menge für @position.Produktname</label>
+                            <input id="menge-@position.Id" type="number" name="menge" value="@position.Menge" min="1" max="100" />
+                            <button class="text-button" type="submit">Ändern</button>
+                        </form>
+                        <strong class="line-total">@Darstellung.Euro(position.Gesamtbetrag)</strong>
+                        <form method="post" asp-page-handler="Entfernen">
+                            <input type="hidden" name="positionId" value="@position.Id" />
+                            <button class="remove-button" type="submit" aria-label="@position.Produktname entfernen">×</button>
+                        </form>
+                    </article>
+                }
+            </div>
+            <aside class="summary-card">
+                <span class="eyebrow">AUF EINEN BLICK</span><h2>Zusammenfassung</h2>
+                <div class="summary-row"><span>Zwischensumme</span><strong>@Darstellung.Euro(Model.Warenkorb.Gesamtbetrag)</strong></div>
+                <div class="summary-row"><span>Versand</span><strong>Kostenlos</strong></div>
+                <div class="summary-total"><span>Gesamtbetrag</span><strong>@Darstellung.Euro(Model.Warenkorb.Gesamtbetrag)</strong></div>
+                <p class="sandbox-note">Der Bezahlvorgang wird zu Demo-Zwecken simuliert.</p>
+                <a class="button button-dark button-wide" asp-page="/Bestellungen/Checkout">Zur Kasse <span aria-hidden="true">→</span></a>
+            </aside>
+        </div>
+    }
+</section>

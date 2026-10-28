@@ -1,26 +1,30 @@
 # ECommerce
 
-Deutschsprachiger E-Commerce-Backend-Kern mit .NET 8, Clean Architecture, CQRS, MediatR, FluentValidation, EF Core und SQLite.
+Vollständige deutschsprachige E-Commerce-Demoanwendung mit Shop-Oberfläche, Administrationsbereich und API auf .NET 8, Clean Architecture, CQRS, MediatR, FluentValidation, EF Core und SQLite.
 
 ## Architektur
 
 - `ECommerce.Domain`: Deutsche Geschäftsobjekte, Bestell-/Zahlungsstatus und Entitätsbasis.
 - `ECommerce.Application`: CQRS-Befehle und -Abfragen, Validierung und Datenbank-/Token-Schnittstellen.
 - `ECommerce.Persistence`: EF-Core-Konfiguration, SQLite, Migrationen, Passwort-Hashing und JWT-Erstellung.
-- `ECommerce.API`: Geschützte Controller, deutsche Problem-Details, OpenAPI und HTTP-Beispiele.
-- `tests/ECommerce.API.Tests`: End-to-End-Tests mit einer isolierten SQLite-Datenbank.
+- `ECommerce.API`: Responsive Razor-Pages-Anwendung, geschützte API-Controller, deutsche Problem-Details, OpenAPI und HTTP-Beispiele.
+- `tests/ECommerce.API.Tests`: End-to-End-Tests für API und Webabläufe mit einer isolierten SQLite-Datenbank.
 
 ## Funktionen
 
 - Kundenregistrierung und Anmeldung mit ASP.NET-Core-Passwort-Hasher.
 - 20 Minuten gültige JWT-Zugriffstoken sowie 30 Tage gültige, gehashte und rotierende Aktualisierungstoken. Wiederverwendung eines widerrufenen Aktualisierungstokens widerruft die aktiven Sitzungen des Kontos.
 - Rollen `Kunde` und `Administrator`. Die Rolle wird serverseitig festgelegt und kann nicht bei der Registrierung gewählt werden.
-- Öffentlicher, paginierter Produktkatalog; Kategorien und Produkte werden administrativ verwaltet.
+- Deutsche Shop-Oberfläche mit Produktkatalog, Suche, Kategorien, Registrierung, Anmeldung, Warenkorb, Lieferadresse, Bestellübersicht und Sandbox-Zahlung.
+- Geschützter Administrationsbereich für Produkte, Kategorien und Bestellstatus.
+- Öffentlicher, paginierter Produktkatalog; Suche und Kategorie-Filter stehen auch über die API zur Verfügung.
 - Warenkorb pro Kunde mit Mengen- und Lagerprüfung.
 - Checkout mit transaktionaler Lagerreservierung für 15 Minuten, Preis-Snapshot und Lieferadress-Snapshot; abgelaufene Reservierungen werden automatisch freigegeben.
 - Sandbox-Zahlung ohne Erfassung echter Zahlungsdaten. Bei fehlgeschlagener Zahlung wird die Reservierung zurückgegeben.
 - RFC-7807-Fehlerantworten, deutsche Validierungsmeldungen, Authentifizierungsratenbegrenzung und Datenbankbereitschaft unter `/gesundheit`.
 - EF-Core-Migrationen statt `EnsureCreated`.
+- SQLite-Datenbankregeln gegen ungültige Lagerbestände und Mengen sowie zusätzliche Indizes für Katalog- und Kategorieabfragen.
+- Im Entwicklungsmodus werden beim ersten Start deutsche Beispieldaten angelegt, damit Shop und Suche sofort ausprobiert werden können. Produktions- und Testdatenbanken werden nicht automatisch mit Beispielen befüllt.
 
 ## Lokal starten
 
@@ -35,9 +39,9 @@ dotnet user-secrets set "Authentifizierung:Signaturschluessel" "$(openssl rand -
 dotnet run --project src/ECommerce.API/ECommerce.API.csproj
 ```
 
-Im Entwicklungsmodus erzeugt die Anwendung bei fehlendem Schlüssel einen temporären Schlüssel und gibt eine Warnung aus. Zugriffstoken werden dadurch nach einem Neustart ungültig. Für stabile lokale Sitzungen den User-Secrets-Befehl verwenden.
+Im Entwicklungsmodus erzeugt die Anwendung bei fehlendem Schlüssel einen temporären Schlüssel und gibt eine Warnung aus. API-Zugriffstoken werden dadurch nach einem Neustart ungültig. Für stabile lokale Sitzungen den User-Secrets-Befehl verwenden.
 
-Die Datenbank wird standardmäßig als `src/ECommerce.API/ecommerce.db` angelegt und beim Start migriert. Swagger ist im Entwicklungsmodus unter `/swagger` verfügbar. Für geschützte Endpunkte zuerst ein Kundenkonto registrieren oder einen initialen Administrator konfigurieren. Der Administrator wird nur angelegt, wenn **beide** Werte gesetzt sind:
+Die Datenbank wird standardmäßig als `src/ECommerce.API/ecommerce.db` angelegt und beim Start migriert. Nach dem Start ist der Shop unter der von ASP.NET Core ausgegebenen lokalen Adresse erreichbar; Swagger steht im Entwicklungsmodus unter `/swagger` bereit. Ein Kundenkonto lässt sich direkt in der Oberfläche anlegen. Den Administrationsbereich erreichst du erst nach der Konfiguration eines initialen Administrators. Dieser wird nur angelegt, wenn **beide** Werte gesetzt sind:
 
 ```bash
 dotnet user-secrets set "Administrator:EMail" "admin@example.de" --project src/ECommerce.API
@@ -74,6 +78,7 @@ Alle Routen und realistischen Beispielaufrufe stehen in [ECommerce.API.http](./s
 | `GET` | `/api/kategorien` | Öffentlich |
 | `POST`, `PUT`, `DELETE` | `/api/kategorien` | Administrator |
 | `GET` | `/api/produkte?seite=1&seitengroesse=20` | Öffentlich, maximal 100 Einträge pro Seite |
+| `GET` | `/api/produkte?suchbegriff=lampe&kategorieId=<guid>` | Öffentlich, optionale Katalogsuche und Kategorie |
 | `GET` | `/api/produkte/{id}` | Öffentlich |
 | `POST`, `PUT`, `DELETE` | `/api/produkte` | Administrator |
 | `GET`, `POST`, `PUT`, `DELETE` | `/api/warenkorb` | Angemeldeter Kunde |
@@ -96,8 +101,8 @@ dotnet ef migrations add DeutscheAenderung \
   --output-dir Migrationen
 ```
 
-Die API wendet vorhandene Migrationen beim Start an. Integrationstests verwenden getrennte temporäre SQLite-Dateien und testen Anmeldung, Rollen, Tokenrotation, Produktverwaltung, Warenkorb, Bestellung, Sandbox-Zahlung und Bestandsrückgabe.
+Die Anwendung wendet vorhandene Migrationen beim Start an. Integrationstests verwenden getrennte temporäre SQLite-Dateien und testen Anmeldung, Rollen, Tokenrotation, Produktverwaltung, Katalogfilter, Warenkorb, Bestellung, Sandbox-Zahlung und Bestandsrückgabe. Ein zusätzlicher Webtest durchläuft Registrierung, Warenkorb, Checkout und simulierte Zahlung.
 
 ## Betriebsgrenzen
 
-Dies ist ein belastbarer Lern-/Portfolio-Backend-Kern, aber **noch kein vollständig produktionsreifes Marktplatzsystem**. SQLite eignet sich für lokale Nutzung und kleine Einzelinstanzen, nicht als Datenbank für horizontal skalierte Verkaufslast. Für Live-Betrieb sind unter anderem PostgreSQL/SQL Server, verteilte Ratenbegrenzung, strukturierte Observability, Backup-/Wiederherstellungstests, Datenschutz-/Kontolöschprozesse, E-Mail-Verifikation, Warenkorb-/Bestell-Paginierung und echte Zahlungs-/Versandintegrationen gesondert umzusetzen und abzusichern. Die enthaltene Zahlungsschnittstelle ist ausdrücklich nur eine Sandbox.
+Dies ist eine vollständige Lern-/Portfolio-Shopanwendung, aber **noch kein produktionsreifes Marktplatzsystem**. SQLite eignet sich für lokale Nutzung und kleine Einzelinstanzen, nicht als Datenbank für horizontal skalierte Verkaufslast. Für Live-Betrieb sind unter anderem PostgreSQL/SQL Server, verteilte Ratenbegrenzung, strukturierte Observability, Backup-/Wiederherstellungstests, Datenschutz-/Kontolöschprozesse, E-Mail-Verifikation, Warenkorb-/Bestell-Paginierung und echte Zahlungs-/Versandintegrationen gesondert umzusetzen und abzusichern. Die enthaltene Zahlungsschnittstelle ist ausdrücklich nur eine Sandbox.

@@ -28,8 +28,12 @@ public sealed class ProdukteController : ControllerBase
     public async Task<ActionResult<Seitenergebnis<ProduktDto>>> AlleAbfragen(
         [FromQuery] int seite = 1,
         [FromQuery] int seitengroesse = 20,
+        [FromQuery] string? suchbegriff = null,
+        [FromQuery] Guid? kategorieId = null,
         CancellationToken abbrechToken = default) =>
-        Ok(await _sender.Send(new ProduktListeAbfragenQuery(seite, seitengroesse), abbrechToken));
+        Ok(await _sender.Send(
+            new ProduktListeAbfragenQuery(seite, seitengroesse, suchbegriff, kategorieId),
+            abbrechToken));
 
     /// <summary>Gibt ein aktives Produkt zurück.</summary>
     [HttpGet("{id:guid}")]

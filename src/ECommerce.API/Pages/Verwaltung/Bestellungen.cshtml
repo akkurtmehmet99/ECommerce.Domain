@@ -1,0 +1,53 @@
+@page
+@model ECommerce.API.Pages.Verwaltung.BestellungenModel
+@{
+    ViewData["Title"] = "Bestellungen verwalten";
+}
+<section class="section-wrap content-page">
+    <a class="back-link" asp-page="/Verwaltung/Index">← Zurück zur Verwaltung</a>
+    <div class="section-heading"><div><span class="eyebrow">BESTELLABWICKLUNG</span><h1>Alle Bestellungen.</h1></div><span class="result-count">@Model.Bestellungen.Gesamtanzahl Bestellungen</span></div>
+    @if (Model.Bestellungen.Eintraege.Count == 0)
+    {
+        <div class="empty-state"><span class="empty-icon">↗</span><h2>Noch keine Bestellungen.</h2><p>Sobald die ersten Bestellungen eingehen, erscheinen sie hier.</p></div>
+    }
+    else
+    {
+        <div class="admin-orders">
+            @foreach (var bestellung in Model.Bestellungen.Eintraege)
+            {
+                <details class="admin-order">
+                    <summary><span><span class="eyebrow">@bestellung.ErstelltAm.ToLocalTime().ToString("dd. MMMM yyyy · HH:mm", CultureInfo.GetCultureInfo("de-DE"))</span><strong>@bestellung.Liefername</strong><small>@bestellung.Positionen.Count Artikel · @bestellung.LieferPostleitzahl @bestellung.LieferStadt</small></span><span class="status-pill status-@bestellung.Status.ToString().ToLowerInvariant()">@Darstellung.StatusAnzeigen(bestellung.Status)</span><strong>@Darstellung.Euro(bestellung.Gesamtbetrag)</strong><span class="details-chevron">⌄</span></summary>
+                    <div class="admin-order-body">
+                        @foreach (var position in bestellung.Positionen)
+                        {
+                            <div class="summary-row"><span>@position.Menge × @position.Produktname</span><strong>@Darstellung.Euro(position.Gesamtbetrag)</strong></div>
+                        }
+                        @if (Model.Folgestatus(bestellung.Status).Count > 0)
+                        {
+                            <form method="post" asp-page-handler="StatusAendern" class="status-form">
+                                <input type="hidden" name="bestellungId" value="@bestellung.Id" />
+                                <label for="status-@bestellung.Id">Bestellstatus ändern</label>
+                                <select id="status-@bestellung.Id" name="status">@foreach (var status in Model.Folgestatus(bestellung.Status)){<option value="@status">@Darstellung.StatusAnzeigen(status)</option>}</select>
+                                <button class="button button-dark" type="submit">Status speichern</button>
+                            </form>
+                        }
+                    </div>
+                </details>
+            }
+        </div>
+        @if (Model.Bestellungen.Gesamtseiten > 1)
+        {
+            <nav class="pagination" aria-label="Bestellseiten der Verwaltung">
+                @if (Model.Bestellungen.Seite > 1)
+                {
+                    <a class="button button-quiet" asp-page="/Verwaltung/Bestellungen" asp-route-seite="@(Model.Bestellungen.Seite - 1)">← Zurück</a>
+                }
+                <span>Seite @Model.Bestellungen.Seite von @Model.Bestellungen.Gesamtseiten</span>
+                @if (Model.Bestellungen.Seite < Model.Bestellungen.Gesamtseiten)
+                {
+                    <a class="button button-quiet" asp-page="/Verwaltung/Bestellungen" asp-route-seite="@(Model.Bestellungen.Seite + 1)">Weiter →</a>
+                }
+            </nav>
+        }
+    }
+</section>

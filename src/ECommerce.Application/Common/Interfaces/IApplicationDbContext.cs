@@ -17,5 +17,11 @@ public interface IApplicationDbContext
     DbSet<Sitzungstoken> Sitzungstoken { get; }
     DatabaseFacade Database { get; }
 
+    Task<IReadOnlyList<Bestellung>> BestellseiteLadenAsync(
+        Guid? kundeId,
+        int ueberspringen,
+        int anzahl,
+        CancellationToken cancellationToken);
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
